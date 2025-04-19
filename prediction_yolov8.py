@@ -11,7 +11,7 @@ test_dir = 'test/images'
 # Define device
 device = 'cpu'  # Change to 'cuda' if using GPU
 
-# Function to classify traffic as High or Low
+# Function to classify traffic as Light, Moderate, or Heavy
 def classify_traffic(image_path):
     results = model.predict(image_path, device=device)
     # Get predictions
@@ -21,7 +21,15 @@ def classify_traffic(image_path):
     # Filter for vehicle classes (bus=1, car=2, motorbike=3)
     vehicle_classes = [1, 2, 3]
     vehicle_count = df[df['class'].isin(vehicle_classes)].shape[0]
-    traffic = 'High' if vehicle_count >= 10 else 'Low'
+    
+    # Classify traffic level
+    if vehicle_count >= 15:
+        traffic = 'Heavy'
+    elif vehicle_count >= 8:
+        traffic = 'Moderate'
+    else:
+        traffic = 'Light'
+    
     return vehicle_count, traffic
 
 # Get list of test images
