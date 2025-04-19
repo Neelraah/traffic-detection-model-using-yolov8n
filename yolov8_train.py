@@ -1,21 +1,61 @@
 from ultralytics import YOLO
+import os
+import pandas as pd
+from pathlib import Path
 
-# Load YOLOv8 model (nano version - change to s, m, l, x for larger models)
-model = YOLO('yolov8n.pt')
+# Step 1: Rebuild data.yaml with correct Kaggle paths
+fixed_yaml = """
+train: /kaggle/input/dataset/train/images
+val: /kaggle/input/dataset/valid/images
+test: /kaggle/input/dataset/test/images
 
-# Train the model
+nc: 5
+names: ['bicycle', 'bus', 'car', 'motorbike', 'person']
+"""
+
+with open("fixed_data.yaml", "w") as f:
+    f.write(fixed_yaml)
+
+# Step 2: Load and train YOLOv8-nano model
+model = YOLO("yolov8n.pt")  # Nano version of YOLOv8
+
 model.train(
-    data='data.yaml',          # Path to your data.yaml file
-    epochs=10,                 # Number of training epochs
-    batch=8,                  # Batch size (lower if running out of memory)
-    imgsz=640,                 # Image resolution (can adjust to 512 for faster training)
-    save=True,                 # Save the best model
-    save_period=5,             # Save every 5 epochs
-    workers=4,                 # Number of CPU threads to use
-    device='cpu'                   # GPU device (set to 'cpu' for CPU-only)
+    data="fixed_data.yaml",
+    epochs=20,
+    imgsz=640,
+    batch=16,
+    name="traffic_detector"
 )
 
-# Save the final model after training
-model.export(format='torchscript', path='yolov8_traffic_model.pt')
+# Step 3: Load best trained model
+trained_model = YOLO("runs/detect/traffic_detector/weights/best.pt")
 
-print("Training complete! Model saved to 'yolov8_traffic_model.pt'")
+#Step 4: Define traffic level classifier
+def classify_traffic(count):
+    if count <= 7:
+        return "Low"
+    elif count <= 15:
+        return "Moderate"
+    else:
+        return "High"
+
+# Step 5: Perform inference on validation set
+val_dir = "/kaggle/input/dataset/valid/images"
+results = []
+
+for img_path in Path(val_dir).rglob("*.jpg"):
+    preds = trained_model(img_path)
+    count = len(preds[0].boxes)
+    level = classify_traffic(count)
+    results.append({
+        "image": img_path.name,
+        "vehicles": count,
+        "traffic_level": level
+    })
+
+# Step 6: Convert to DataFrame and show results
+df = pd.DataFrame(results)
+print(df.head(10))
+
+# ✅ Step 7: Save results
+df.to_csv("traffic_results.csv", index=False)
