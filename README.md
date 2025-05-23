@@ -1,6 +1,6 @@
-# 🚦 YOLOv8s Traffic Detection Model
+# 🚦 YOLOv8n Traffic Detection Model
 
-This YOLOv8s model is trained on a custom traffic dataset to detect five key object classes:  
+This YOLOv8n model is trained on a custom traffic dataset to detect five key object classes:  
 **bicycle, bus, car, motorbike, and person**.
 
 It is optimized for **real-time detection in urban environments**, and can be used in applications such as:
